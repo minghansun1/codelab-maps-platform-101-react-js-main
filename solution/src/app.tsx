@@ -1,19 +1,3 @@
-/**
- * Copyright 2024 Google LLC
- * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * 
- *    https://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
-*/
-
 import React, {useEffect, useState, useRef, useCallback} from 'react';
 import {createRoot} from 'react-dom/client';
 
@@ -50,20 +34,56 @@ const locations: Poi[] = [
   {key: 'barangaroo', location: { lat: - 33.8605523, lng: 151.1972205 }},
 ];
 
-const App = () => (
-  <APIProvider apiKey={'AIzaSyB3gjFVnx4W-QWzH5vp1EUzOvzkw_kwsqg'} onLoad={() => console.log('Maps API has loaded.')}>
-    <Map
-      defaultZoom={5}
-      defaultCenter={{ lat: -33.860664, lng: 151.208138 }}
-      onCameraChanged={ (ev: MapCameraChangedEvent) =>
-        console.log('camera changed:', ev.detail.center, 'zoom:', ev.detail.zoom)
-      }
-      mapId='da37f3254c6a6d1c'
-      >
-    <PoiMarkers pois={locations} />
-    </Map>
-  </APIProvider>
-);
+const App = () => {
+  const mapRef = useRef(null); // Reference for the map container
+
+  useEffect(() => {
+    // Function to initialize the map
+    const initMap = async () => {
+      // Request needed libraries from Google Maps
+      const { Map, InfoWindow } = await google.maps.importLibrary("maps") as google.maps.MapsLibrary;
+      const { AdvancedMarkerElement } = await google.maps.importLibrary("marker") as google.maps.MarkerLibrary;
+
+      // Create a new map instance and attach it to the mapRef div
+      const map = new Map(mapRef.current, {
+        center: { lat: 37.39094933041195, lng: -122.02503913145092 },
+        zoom: 5,
+        mapId: '4504f8b37365c3d0',
+      });
+
+      const infoWindow = new InfoWindow();
+
+      // Create a draggable marker
+      const draggableMarker = new AdvancedMarkerElement({
+        map,
+        position: { lat: 37.39094933041195, lng: -122.02503913145092 },
+        gmpDraggable: true,
+        title: "This marker is draggable.",
+      });
+
+      // Add event listener for when the marker is dropped
+      draggableMarker.addListener('dragend', (event) => {
+        const position = draggableMarker.position as google.maps.LatLng;
+        infoWindow.close();
+        infoWindow.setContent(`Pin dropped at: ${position.lat}, ${position.lng}`);
+
+        
+        infoWindow.open(draggableMarker.map, draggableMarker);
+      });
+    };
+
+    // Call the initMap function after the component mounts
+    initMap();
+  }, []); // Empty dependency array means this effect runs once after the component mounts
+
+  return (
+    // Map container, will be assigned to mapRef
+    <div ref={mapRef} style={{ height: '500px', width: '100%' }}>
+      {/* The map will be rendered inside this div */}
+    </div>
+  );
+};
+
 
 const PoiMarkers = (props: { pois: Poi[] }) => {
   const map = useMap();
